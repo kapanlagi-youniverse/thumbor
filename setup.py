@@ -14,7 +14,7 @@ from thumbor import __version__
 import glob
 import os
 import logging
-
+import platform
 
 tests_require = [
     "redis>=2.4.9,<3.0.0",
@@ -34,7 +34,13 @@ tests_require = [
     "opencv-python",
     "yanc>=0.3.3",
 ]
-
+def getExtraCompileArgs():
+    extra_args = []
+    if platform.linux_distribution()[0].lower() == "ubuntu" and platform.linux_distribution()[1] == "18.04":
+        extra_args=['-Wall', '-Wextra', '-Werror', '-Wno-unused-parameter','-fgnu89-inline']
+    else:
+        extra_args=['-Wall', '-Wextra', '-Werror', '-Wno-unused-parameter']
+    return extra_args
 
 def filter_extension_module(name, lib_objs, lib_headers):
     return Extension(
@@ -43,12 +49,7 @@ def filter_extension_module(name, lib_objs, lib_headers):
         libraries=["m"],
         include_dirs=["thumbor/ext/filters/lib"],
         depends=["setup.py"] + lib_objs + lib_headers,
-        extra_compile_args=[
-            "-Wall",
-            "-Wextra",
-            "-Werror",
-            "-Wno-unused-parameter",
-        ],
+        extra_compile_args=getExtraCompileArgs(),
     )
 
 
@@ -64,7 +65,9 @@ def gather_filter_extensions():
 
 
 def run_setup(extension_modules=[]):
-    if "CFLAGS" not in os.environ:
+    if 'CFLAGS' not in os.environ and (platform.linux_distribution()[0].lower() == "ubuntu" and platform.linux_distribution()[1] == "18.04"):
+        os.environ['CFLAGS'] = '-fgnu89-inline'
+    elif 'CFLAGS' not in os.environ:
         os.environ["CFLAGS"] = ""
     setup(
         name="thumbor",
